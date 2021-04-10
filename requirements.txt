@@ -3,3 +3,4 @@ openpyxl==3.0.7 # to read xlsx files in pandas
 matplotlib==3.4.1
 nltk==3.6.1
 seaborn=0.11.1
+skift==0.0.19

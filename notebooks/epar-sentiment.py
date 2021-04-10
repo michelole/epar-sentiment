@@ -180,4 +180,45 @@ plt.show()
 from sklearn.metrics import classification_report
 
 print(classification_report(data['rating'], y_pred))
+
+# %% [md]
+# ### Using `fastText`
+
+# %% [md]
+# Train and fine-tune the classifier.
+# %%
+from skift import ColLblBasedFtClassifier
+
+DIM = [1, 2, 5, 10, 20, 50, 100]
+EPOCHS = [1, 2, 5, 10, 20, 50, 100]
+LR = [0.01, 0.1, 0.2, 0.5, 1.0]
+
+max_score = 0
+stdev_max_score = 0
+dim_max_score = 0
+epochs_max_score = 0
+lr_max_score = 0
+
+# Manually run grid search since `skift` does not support sklearn's `GridSearchCV`
+for dim in DIM:
+    for epoch in EPOCHS:
+        for lr in LR:
+            print(f"dim={dim}, epoch={epoch}, lr={lr}")
+            ft_clf = ColLblBasedFtClassifier(input_col_lbl='clean_sentence', dim=dim, epoch=epoch, lr=lr)
+            scores = cross_val_score(ft_clf, data[['clean_sentence']], data['rating'], cv=10)
+            mean_score = mean(scores)
+            stdev_score = stdev(scores)
+            if mean_score > max_score:
+                print(f"{mean_score} +- {stdev_score}")
+                print(stdev_score)
+                max_score = mean_score
+                stdev_max_score = stdev_score
+                dim_max_score = dim
+                epochs_max_score = epoch
+                lr_max_score = lr
+
+print("Best model:")
+print(f"dim={dim_max_score}, epoch={epochs_max_score}, lr={lr_max_score}")
+print(f"{max_score} +- {stdev_max_score}")
+
 # %%
