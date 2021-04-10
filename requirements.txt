@@ -1,0 +1,3 @@
+pandas==1.2.3
+openpyxl==3.0.7 # to read xlsx files in pandas
+matplotlib==3.4.1
