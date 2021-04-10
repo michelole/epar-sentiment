@@ -100,3 +100,25 @@ def remove_stopwords(text):
 data['clean_sentence'] = data['clean_sentence'].apply(remove_stopwords)
 
 data['clean_sentence']
+
+# %% [md]
+# ## Textual analysis
+# %% [md]
+# How does the vocabulary affect the rating?
+# %%
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=0.01, max_df=0.99)
+X_train = vectorizer.fit_transform(data['clean_sentence'])
+print(X_train.shape)
+
+feature_names = vectorizer.get_feature_names()
+print(feature_names)
+
+document_matrix = pd.DataFrame.sparse.from_spmatrix(X_train).sparse.to_dense()
+document_matrix.columns = feature_names
+
+train_features = pd.concat([data.reset_index(), document_matrix], axis=1).sort_values('rating')\
+    .drop(columns=['index', 'Sentence', 'Positive', 'Negative', 'Neutral', 'sentence_length'])
+
+train_features.to_excel('../features.xlsx')
