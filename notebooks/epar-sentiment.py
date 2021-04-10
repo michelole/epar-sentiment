@@ -129,16 +129,11 @@ train_features = pd.concat([data.reset_index(), document_matrix], axis=1).sort_v
 train_features.to_excel('../features.xlsx')
 
 # %% [md]
-# ## Slicing data
-# %%
-import numpy as np
-
-train, dev, test = np.split(data.sample(frac=1, random_state=24), [int(.8*len(data)), int(.9*len(data))])
-
-# %% [md]
 # ## Text classification
 # %% [md]
 # ### Using SVM + tf-idf
+# %% [md]
+# Declare a pipeline.
 # %%
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer
@@ -151,22 +146,28 @@ svm_clf = Pipeline([
      # XXX Probability may slow down model
      ('clf', SVC(kernel='linear', probability=True))
  ])
-svm_clf.fit(train['clean_sentence'], train['rating'])
 
 # %% [md]
-# Calculate overall score.
+# Cross-validate the dataset. This generates more robust metrics and allow us to use the full
+# dataset for both training and evaluation.
 # %%
-predicted = svm_clf.predict(dev['Sentence'])
-svm_score = np.mean(predicted == dev['rating'])
-print(svm_score)
+from sklearn.model_selection import cross_val_score
+from statistics import mean, stdev
+
+scores = cross_val_score(svm_clf, data['clean_sentence'], data['rating'], cv=10)
+print(mean(scores))
+print(stdev(scores))
 
 # %% [md]
 # Generate confusion matrix.
 # %%
+from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import confusion_matrix
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-conf_matrix = pd.crosstab(dev['rating'], predicted)
+y_pred = cross_val_predict(svm_clf, data['clean_sentence'], data['rating'], cv=10)
+conf_matrix = confusion_matrix(data['rating'], y_pred)
 sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='OrRd')
 plt.title(f"SVM, min_df = {MIN_DF}, max_df = {MAX_DF}")
 plt.xlabel("Predicted label")
@@ -178,5 +179,5 @@ plt.show()
 # %%
 from sklearn.metrics import classification_report
 
-print(classification_report(dev['rating'], predicted))
+print(classification_report(data['rating'], y_pred))
 # %%
