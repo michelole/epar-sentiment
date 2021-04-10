@@ -44,11 +44,22 @@ print(negative)
 print(neutral)
 
 # %% [md]
+# Normalize ratings in a single column.
+
+# %%
+data['rating'] = 1*data['Positive'] + 0*data['Neutral'] - 1*data['Negative']
+
+# %% [md]
 # Check length distribution.
 # %%
-lengths = data['Sentence'].str.len()
-print(lengths.describe())
-lengths.plot.box()
+data['sentence_length'] = data['Sentence'].str.len()
+print(data['sentence_length'].describe())
+data['sentence_length'].plot.box()
+
+# %% [md]
+# Does length vary by rating?
+# %%
+data.boxplot(column=['sentence_length'], by='rating', figsize=(5, 7))
 
 # %% [md]
 # Set a majority baseline.
