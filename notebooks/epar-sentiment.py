@@ -55,3 +55,37 @@ lengths.plot.box()
 # %%
 baseline_acc = max(positive, negative, neutral) / len(data)
 print(baseline_acc)
+
+# %% [md]
+# ## Pre-processing
+# %% [md]
+# Lowercase and keep only alphabetic characters (including e.g. the German umlaut).
+# Numbers do not seem to convey meaning and commonly lead to overfitting.
+# %%
+import re
+# Lowercase
+data['clean_sentence'] = data['Sentence'].str.lower()
+
+# \W = [^a-zA-Z0-9_] + Unicode variations
+cleaner = re.compile(r"[0-9_\W\s]+")
+data['clean_sentence'] = data['clean_sentence'].str.replace(cleaner, " ")
+
+data['clean_sentence']
+
+# %% [md]
+# Remove stopwords.
+# %%
+import nltk
+
+# TODO Check the impact of removing "should" (and its variations), since it seems to be a predictor
+# for negative/neutral ratings.
+nltk.download('stopwords')
+stopwords = set(nltk.corpus.stopwords.words('english'))
+
+def remove_stopwords(text):
+    tokens = text.split()
+    return " ".join([word for word in tokens if word not in stopwords])
+
+data['clean_sentence'] = data['clean_sentence'].apply(remove_stopwords)
+
+data['clean_sentence']
