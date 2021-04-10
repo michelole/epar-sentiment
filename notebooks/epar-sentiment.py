@@ -105,10 +105,15 @@ data['clean_sentence']
 # ## Textual analysis
 # %% [md]
 # How does the vocabulary affect the rating?
+
+# %%
+MIN_DF = 0.01
+MAX_DF = 0.99
+
 # %%
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=0.01, max_df=0.99)
+vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=MIN_DF, max_df=MAX_DF)
 X_train = vectorizer.fit_transform(data['clean_sentence'])
 print(X_train.shape)
 
@@ -122,3 +127,56 @@ train_features = pd.concat([data.reset_index(), document_matrix], axis=1).sort_v
     .drop(columns=['index', 'Sentence', 'Positive', 'Negative', 'Neutral', 'sentence_length'])
 
 train_features.to_excel('../features.xlsx')
+
+# %% [md]
+# ## Slicing data
+# %%
+import numpy as np
+
+train, dev, test = np.split(data.sample(frac=1, random_state=24), [int(.8*len(data)), int(.9*len(data))])
+
+# %% [md]
+# ## Text classification
+# %% [md]
+# ### Using SVM + tf-idf
+# %%
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.svm import SVC
+
+svm_clf = Pipeline([
+     ('vect', CountVectorizer(min_df=MIN_DF, max_df=MAX_DF)),
+     ('tfidf', TfidfTransformer()),
+     # XXX Probability may slow down model
+     ('clf', SVC(kernel='linear', probability=True))
+ ])
+svm_clf.fit(train['clean_sentence'], train['rating'])
+
+# %% [md]
+# Calculate overall score.
+# %%
+predicted = svm_clf.predict(dev['Sentence'])
+svm_score = np.mean(predicted == dev['rating'])
+print(svm_score)
+
+# %% [md]
+# Generate confusion matrix.
+# %%
+from matplotlib import pyplot as plt
+import seaborn as sns
+
+conf_matrix = pd.crosstab(dev['rating'], predicted)
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='OrRd')
+plt.title(f"SVM, min_df = {MIN_DF}, max_df = {MAX_DF}")
+plt.xlabel("Predicted label")
+plt.ylabel("True label")
+plt.show()
+
+# %% [md]
+# Display classification report.
+# %%
+from sklearn.metrics import classification_report
+
+print(classification_report(dev['rating'], predicted))
+# %%
