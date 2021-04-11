@@ -172,6 +172,22 @@ selector.score(input_features, train_features['rating'])
 
 # %% [md]
 # ## Text classification
+
+# %% [md]
+# ### Baseline
+# %% [md]
+# Since our dataset is imbalanced, calculate a majority baseline.
+# %%
+from sklearn.model_selection import cross_val_score
+from sklearn.dummy import DummyClassifier
+from statistics import mean, stdev
+
+majority_clf = DummyClassifier(random_state=42)
+
+majority_scores = cross_val_score(majority_clf, data['clean_sentence'], data['rating'], cv=10)
+print(mean(majority_scores))
+print(stdev(majority_scores))
+
 # %% [md]
 # ### Using SVM + tf-idf
 # %% [md]
@@ -192,9 +208,6 @@ svm_clf = Pipeline([
 # Cross-validate the dataset. This generates more robust metrics and allow us to use the full
 # dataset for both training and evaluation.
 # %%
-from sklearn.model_selection import cross_val_score
-from statistics import mean, stdev
-
 svm_scores = cross_val_score(svm_clf, data['clean_sentence'], data['rating'], cv=10)
 print(mean(svm_scores))
 print(stdev(svm_scores))
@@ -270,7 +283,8 @@ print(f"{mean_max_score} +- {stdev(max_ft_scores)}")
 # %% [md]
 # Compare overall classification results using boxplot.
 # %%
-results = pd.concat([pd.DataFrame({'accuracy': svm_scores, 'method': "SVM"}),
+results = pd.concat([pd.DataFrame({'accuracy': majority_scores, 'method': "Majority"}),
+    pd.DataFrame({'accuracy': svm_scores, 'method': "SVM"}),
     pd.DataFrame({'accuracy': max_ft_scores, 'method': "fastText"})])
 
 results.boxplot(column=['accuracy'], by='method', showmeans=True, figsize=(7, 5))
