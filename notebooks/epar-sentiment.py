@@ -189,9 +189,12 @@ print(classification_report(data['rating'], y_pred))
 # %%
 from skift import ColLblBasedFtClassifier
 
-DIM = [1, 2, 5, 10, 20, 50, 100]
-EPOCHS = [1, 2, 5, 10, 20, 50, 100]
-LR = [0.01, 0.1, 0.2, 0.5, 1.0]
+# DIM = [1, 2, 5, 10, 20, 50, 100]
+# EPOCHS = [1, 2, 5, 10, 20, 50, 100]
+# LR = [0.01, 0.1, 0.2, 0.5, 1.0]
+DIM = [20]
+EPOCHS = [100]
+LR = [1.0]
 
 max_score = 0
 stdev_max_score = 0
