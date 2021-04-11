@@ -149,6 +149,28 @@ train_features = pd.concat([data.reset_index(), document_matrix], axis=1).sort_v
 train_features.to_excel('../features.xlsx')
 
 # %% [md]
+# ## Feature selection
+# %% [md]
+# Select features using RFE (recursive feature elimination).
+# %%
+import numpy as np
+from sklearn.feature_selection import RFE
+from sklearn.svm import SVC
+
+TARGET_FEATURES = 30
+
+# Column 3 is where the term-incidence matrix starts
+input_features = train_features.iloc[:, 3:]
+svc = SVC(kernel='linear')
+selector = RFE(svc, n_features_to_select=TARGET_FEATURES)
+selector = selector.fit(input_features, train_features['rating'])
+
+vocabulary = np.array(feature_names, dtype=object)
+print(vocabulary[selector.get_support()])
+
+selector.score(input_features, train_features['rating'])
+
+# %% [md]
 # ## Text classification
 # %% [md]
 # ### Using SVM + tf-idf
@@ -158,7 +180,6 @@ train_features.to_excel('../features.xlsx')
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
-from sklearn.svm import SVC
 
 svm_clf = Pipeline([
      ('vect', CountVectorizer(min_df=MIN_DF, max_df=MAX_DF)),
@@ -244,24 +265,4 @@ print("Best model:")
 print(f"dim={dim_max_score}, epoch={epochs_max_score}, lr={lr_max_score}")
 print(f"{max_score} +- {stdev_max_score}")
 
-# %% [md]
-# ## Feature selection
-# %% [md]
-# Select features using RFE (recursive feature elimination).
-# %%
-import numpy as np
-from sklearn.feature_selection import RFE
-
-TARGET_FEATURES = 30
-
-# Column 3 is where the term-incidence matrix starts
-input_features = train_features.iloc[:, 3:]
-svc = SVC(kernel='linear')
-selector = RFE(svc, n_features_to_select=TARGET_FEATURES)
-selector = selector.fit(input_features, train_features['rating'])
-
-vocabulary = np.array(feature_names, dtype=object)
-print(vocabulary[selector.get_support()])
-
-selector.score(input_features, train_features['rating'])
 # %%
