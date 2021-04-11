@@ -195,9 +195,9 @@ svm_clf = Pipeline([
 from sklearn.model_selection import cross_val_score
 from statistics import mean, stdev
 
-scores = cross_val_score(svm_clf, data['clean_sentence'], data['rating'], cv=10)
-print(mean(scores))
-print(stdev(scores))
+svm_scores = cross_val_score(svm_clf, data['clean_sentence'], data['rating'], cv=10)
+print(mean(svm_scores))
+print(stdev(svm_scores))
 
 # %% [md]
 # Generate confusion matrix.
@@ -237,8 +237,8 @@ DIM = [20]
 EPOCHS = [100]
 LR = [1.0]
 
-max_score = 0
-stdev_max_score = 0
+mean_max_score = 0
+max_ft_scores = []
 dim_max_score = 0
 epochs_max_score = 0
 lr_max_score = 0
@@ -252,18 +252,29 @@ for dim in DIM:
             scores = cross_val_score(ft_clf, data[['clean_sentence']], data['rating'], cv=10)
             mean_score = mean(scores)
             stdev_score = stdev(scores)
-            if mean_score > max_score:
+            if mean_score > mean_max_score:
                 print(f"{mean_score} +- {stdev_score}")
-                print(stdev_score)
-                max_score = mean_score
-                stdev_max_score = stdev_score
+                mean_max_score = mean_score
+                max_ft_scores = scores
                 dim_max_score = dim
                 epochs_max_score = epoch
                 lr_max_score = lr
 
 print("Best model:")
 print(f"dim={dim_max_score}, epoch={epochs_max_score}, lr={lr_max_score}")
-print(f"{max_score} +- {stdev_max_score}")
+print(f"{mean_max_score} +- {stdev(max_ft_scores)}")
+
+# %% [md]
+# ### Overall results
+
+# %% [md]
+# Compare overall classification results using boxplot.
+# %%
+results = pd.concat([pd.DataFrame({'accuracy': svm_scores, 'method': "SVM"}),
+    pd.DataFrame({'accuracy': max_ft_scores, 'method': "fastText"})])
+
+results.boxplot(column=['accuracy'], by='method', showmeans=True, figsize=(7, 5))
+plt.ylim([0.4, 1.0])
 
 # %% [md]
 # ### Using Linear Regression
@@ -279,9 +290,9 @@ ridge_regr = Pipeline([
  ])
 
 for scoring in ['r2', 'neg_root_mean_squared_error']:
-    scores = cross_val_score(ridge_regr, data['clean_sentence'], data['rating'], cv=10, scoring=scoring)
+    svm_scores = cross_val_score(ridge_regr, data['clean_sentence'], data['rating'], cv=10, scoring=scoring)
     print(scoring)
-    print(mean(scores))
-    print(stdev(scores))
+    print(mean(svm_scores))
+    print(stdev(svm_scores))
 
 # %%
