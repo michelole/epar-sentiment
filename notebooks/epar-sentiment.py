@@ -198,8 +198,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 svm_clf = Pipeline([
-     ('vect', CountVectorizer(min_df=MIN_DF, max_df=MAX_DF)),
-     ('tfidf', TfidfTransformer()),
+     ('tfidf', TfidfVectorizer(sublinear_tf=True)),
      # XXX Probability may slow down model
      ('clf', SVC(kernel='linear', probability=True))
  ])
