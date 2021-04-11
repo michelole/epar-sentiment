@@ -207,8 +207,8 @@ from sklearn.metrics import confusion_matrix
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-y_pred = cross_val_predict(svm_clf, data['clean_sentence'], data['rating'], cv=10)
-conf_matrix = confusion_matrix(data['rating'], y_pred)
+pred = cross_val_predict(svm_clf, data['clean_sentence'], data['rating'], cv=10)
+conf_matrix = confusion_matrix(data['rating'], pred)
 sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='OrRd')
 plt.title(f"SVM, min_df = {MIN_DF}, max_df = {MAX_DF}")
 plt.xlabel("Predicted label")
@@ -220,7 +220,7 @@ plt.show()
 # %%
 from sklearn.metrics import classification_report
 
-print(classification_report(data['rating'], y_pred))
+print(classification_report(data['rating'], pred))
 
 # %% [md]
 # ### Using `fastText`
@@ -264,5 +264,24 @@ for dim in DIM:
 print("Best model:")
 print(f"dim={dim_max_score}, epoch={epochs_max_score}, lr={lr_max_score}")
 print(f"{max_score} +- {stdev_max_score}")
+
+# %% [md]
+# ### Using Linear Regression
+
+# %% [md]
+# Train a Ridge regressor.
+
+# %%
+from sklearn.linear_model import Ridge
+ridge_regr = Pipeline([
+     ('tfidf', TfidfVectorizer()),
+     ('regr', Ridge())
+ ])
+
+for scoring in ['r2', 'neg_root_mean_squared_error']:
+    scores = cross_val_score(ridge_regr, data['clean_sentence'], data['rating'], cv=10, scoring=scoring)
+    print(scoring)
+    print(mean(scores))
+    print(stdev(scores))
 
 # %%
