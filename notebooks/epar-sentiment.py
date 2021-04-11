@@ -105,15 +105,35 @@ data['clean_sentence']
 # ## Textual analysis
 # %% [md]
 # How does the vocabulary affect the rating?
+# Select features based on document frequency.
 
 # %%
 MIN_DF = 0.01
 MAX_DF = 0.99
 
+# %% [md]
+# Handcraft features.
+
+CANDIDATE_NEGATIVE_FEATURES = set(["missing", "further", "awaited", "address", "issues", "limited",
+    "questions", "weak", "inconsistent", "poor", "requested", "uncertainties", "additional", "lack",
+    "questionable"])
+CANDIDATE_NEUTRAL_FEATURES = set(["conditional", "final", "additional", "long", "term", "common",
+    "events"])
+CANDIDATE_POSITIVE_FEATURES = set(["meaningful", "significant", "response", "activity", "support",
+    "efficacy", "consistent", "biosimilarity", "bioequivalence", "bioequivalent", "demonstrate",
+    "demonstrated", "comparable", "comparability", "compared", "acceptable", "accepted",
+    "supportive", "superiority", "sufficient", "extrapolated", "extrapolation", "similar",
+    "similarity", "similarly", "adequate", "line", "statistically", "appropriate", "safety",
+    "relevant", "favourable", "approvable"])
+FEATURES = CANDIDATE_NEGATIVE_FEATURES.union(CANDIDATE_NEUTRAL_FEATURES).union(CANDIDATE_POSITIVE_FEATURES)
+
 # %%
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=MIN_DF, max_df=MAX_DF)
+# XXX Switch from frequency-based to handcrafted features.
+# vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=MIN_DF, max_df=MAX_DF)
+vectorizer = TfidfVectorizer(sublinear_tf=True, vocabulary=FEATURES)
+
 X_train = vectorizer.fit_transform(data['clean_sentence'])
 print(X_train.shape)
 
@@ -232,7 +252,7 @@ print(f"{max_score} +- {stdev_max_score}")
 import numpy as np
 from sklearn.feature_selection import RFE
 
-TARGET_FEATURES = 50
+TARGET_FEATURES = 30
 
 # Column 3 is where the term-incidence matrix starts
 input_features = train_features.iloc[:, 3:]
