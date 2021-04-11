@@ -235,6 +235,21 @@ from sklearn.metrics import classification_report
 print(classification_report(data['rating'], pred))
 
 # %% [md]
+# ### Explainability
+# %% [md]
+# Use LIME to explain predictions.
+# %%
+from lime.lime_text import LimeTextExplainer
+
+ID = 4
+
+svm_clf.fit(data['clean_sentence'], data['rating'])
+explainer = LimeTextExplainer(class_names=[-1, 0, 1])
+exp = explainer.explain_instance(data['clean_sentence'][ID - 1], svm_clf.predict_proba, top_labels=1, num_features=10)
+exp.show_in_notebook()
+exp.save_to_file('../svm_explanation.html')
+
+# %% [md]
 # ### Using `fastText`
 
 # %% [md]

@@ -134,5 +134,8 @@ dmypy.json
 
 # Data
 data
+
+# Results
 *.xlsx
 *.xls
+*.html
