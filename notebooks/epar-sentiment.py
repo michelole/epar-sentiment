@@ -112,7 +112,7 @@ MIN_DF = 0.01
 MAX_DF = 0.99
 
 # %% [md]
-# Handcraft features.
+# Handcrafted features.
 
 CANDIDATE_NEGATIVE_FEATURES = set(["missing", "further", "awaited", "address", "issues", "limited",
     "questions", "weak", "inconsistent", "poor", "requested", "uncertainties", "additional", "lack",
@@ -131,8 +131,9 @@ FEATURES = CANDIDATE_NEGATIVE_FEATURES.union(CANDIDATE_NEUTRAL_FEATURES).union(C
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 # XXX Switch from frequency-based to handcrafted features.
-# vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=MIN_DF, max_df=MAX_DF)
-vectorizer = TfidfVectorizer(sublinear_tf=True, vocabulary=FEATURES)
+vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=MIN_DF, max_df=MAX_DF)
+# vectorizer = TfidfVectorizer(sublinear_tf=True, vocabulary=FEATURES)
+# vectorizer = TfidfVectorizer(sublinear_tf=True)
 
 X_train = vectorizer.fit_transform(data['clean_sentence'])
 print(X_train.shape)
@@ -157,7 +158,7 @@ import numpy as np
 from sklearn.feature_selection import RFE
 from sklearn.svm import SVC
 
-TARGET_FEATURES = 30
+TARGET_FEATURES = 100
 
 # Column 3 is where the term-incidence matrix starts
 input_features = train_features.iloc[:, 3:]
@@ -165,10 +166,13 @@ svc = SVC(kernel='linear')
 selector = RFE(svc, n_features_to_select=TARGET_FEATURES)
 selector = selector.fit(input_features, train_features['rating'])
 
-vocabulary = np.array(feature_names, dtype=object)
-print(vocabulary[selector.get_support()])
+candidate_vocabulary = np.array(feature_names, dtype=object)
+selected_vocabulary = candidate_vocabulary[selector.get_support()]
+print(selected_vocabulary)
+print(len(selected_vocabulary))
 
-selector.score(input_features, train_features['rating'])
+# Prefer to use CV next
+# selector.score(input_features, train_features['rating'])
 
 # %% [md]
 # ## Text classification
@@ -194,11 +198,9 @@ print(stdev(majority_scores))
 # Declare a pipeline.
 # %%
 from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
 
 svm_clf = Pipeline([
-     ('tfidf', TfidfVectorizer(sublinear_tf=True)),
+     ('tfidf', TfidfVectorizer(vocabulary=selected_vocabulary, sublinear_tf=True)),
      # XXX Probability may slow down model
      ('clf', SVC(kernel='linear', probability=True))
  ])
