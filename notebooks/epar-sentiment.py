@@ -173,29 +173,19 @@ print(len(selected_vocabulary))
 
 # Prefer to use CV next
 # selector.score(input_features, train_features['rating'])
-
+    
 # %% [md]
 # ## Text classification
 
 # %% [md]
-# ### Baseline
-# %% [md]
 # Since our dataset is imbalanced, calculate a majority baseline.
 # %%
-from sklearn.model_selection import cross_val_score
 from sklearn.dummy import DummyClassifier
-from statistics import mean, stdev
 
 majority_clf = DummyClassifier(random_state=42)
 
-majority_scores = cross_val_score(majority_clf, data['clean_sentence'], data['rating'], cv=10)
-print(mean(majority_scores))
-print(stdev(majority_scores))
-
 # %% [md]
-# ### Using SVM + tf-idf
-# %% [md]
-# Declare a pipeline.
+# Using SVM + tf-idf
 # %%
 from sklearn.pipeline import Pipeline
 
@@ -206,71 +196,26 @@ svm_clf = Pipeline([
  ])
 
 # %% [md]
-# Cross-validate the dataset. This generates more robust metrics and allow us to use the full
-# dataset for both training and evaluation.
-# %%
-svm_scores = cross_val_score(svm_clf, data['clean_sentence'], data['rating'], cv=10)
-print(mean(svm_scores))
-print(stdev(svm_scores))
-
-# %% [md]
-# Generate confusion matrix.
-# %%
-from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import confusion_matrix
-from matplotlib import pyplot as plt
-import seaborn as sns
-
-pred = cross_val_predict(svm_clf, data['clean_sentence'], data['rating'], cv=10)
-conf_matrix = confusion_matrix(data['rating'], pred)
-sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='OrRd')
-plt.title(f"SVM, min_df = {MIN_DF}, max_df = {MAX_DF}")
-plt.xlabel("Predicted label")
-plt.ylabel("True label")
-plt.show()
-
-# %% [md]
-# Display classification report.
-# %%
-from sklearn.metrics import classification_report
-
-print(classification_report(data['rating'], pred))
-
-# %% [md]
-# ### Explainability
-# %% [md]
-# Use LIME to explain predictions.
-# %%
-from lime.lime_text import LimeTextExplainer
-
-ID = 4
-
-svm_clf.fit(data['clean_sentence'], data['rating'])
-explainer = LimeTextExplainer(class_names=[-1, 0, 1])
-exp = explainer.explain_instance(data['clean_sentence'][ID - 1], svm_clf.predict_proba, top_labels=1, num_features=10)
-exp.show_in_notebook()
-exp.save_to_file('../svm_explanation.html')
-
-# %% [md]
-# ### Using `fastText`
-
-# %% [md]
-# Train and fine-tune the classifier.
+# Train and fine-tune a `fastText` classifier.
 # %%
 from skift import ColLblBasedFtClassifier
+from sklearn.model_selection import cross_val_score
+from statistics import mean, stdev
 
-# DIM = [1, 2, 5, 10, 20, 50, 100]
-# EPOCHS = [1, 2, 5, 10, 20, 50, 100]
-# LR = [0.01, 0.1, 0.2, 0.5, 1.0]
 DIM = [20]
 EPOCHS = [100]
 LR = [1.0]
+# XXX Uncomment to run grid search
+# DIM = [1, 2, 5, 10, 20, 50, 100]
+# EPOCHS = [1, 2, 5, 10, 20, 50, 100]
+# LR = [0.01, 0.1, 0.2, 0.5, 1.0]
 
 mean_max_score = 0
 max_ft_scores = []
 dim_max_score = 0
 epochs_max_score = 0
 lr_max_score = 0
+best_ft_clf = False
 
 # Manually run grid search since `skift` does not support sklearn's `GridSearchCV`
 for dim in DIM:
@@ -278,20 +223,57 @@ for dim in DIM:
         for lr in LR:
             print(f"dim={dim}, epoch={epoch}, lr={lr}")
             ft_clf = ColLblBasedFtClassifier(input_col_lbl='clean_sentence', dim=dim, epoch=epoch, lr=lr)
-            scores = cross_val_score(ft_clf, data[['clean_sentence']], data['rating'], cv=10)
-            mean_score = mean(scores)
-            stdev_score = stdev(scores)
+            ft_scores = cross_val_score(ft_clf, data[['clean_sentence']], data['rating'], cv=10)
+            mean_score = mean(ft_scores)
+            stdev_score = stdev(ft_scores)
             if mean_score > mean_max_score:
                 print(f"{mean_score} +- {stdev_score}")
+                best_ft_clf = ft_clf
                 mean_max_score = mean_score
-                max_ft_scores = scores
+                max_ft_scores = ft_scores
                 dim_max_score = dim
                 epochs_max_score = epoch
                 lr_max_score = lr
 
-print("Best model:")
-print(f"dim={dim_max_score}, epoch={epochs_max_score}, lr={lr_max_score}")
-print(f"{mean_max_score} +- {stdev(max_ft_scores)}")
+print(f"Best fastText model: dim={dim_max_score}, epoch={epochs_max_score}, lr={lr_max_score}")
+
+# %% [md]
+# Iterate over the declared classifiers to generate reports.
+# %%
+from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import classification_report
+from util import plot_confusion_matrix
+from util import explain
+
+EXPLAIN_ID = 4
+
+classifiers = {'Majority': majority_clf, 'SVM': svm_clf, 'fastText': best_ft_clf}
+scores = {'Majority': [], 'SVM': [], 'fastText': []}
+
+for k, v in classifiers.items():
+    X_train = data['clean_sentence']
+    instance = X_train[EXPLAIN_ID - 1]
+    method = v.predict_proba
+
+    # `skift` is really a bad wrapper library...
+    if k == 'fastText':
+        X_train = data[['clean_sentence']]
+        method = v.predict_proba_on_str_arr
+    
+    # Cross-validate the dataset.
+    clf_scores = cross_val_score(v, X_train, data['rating'], cv=10)
+    scores[k] = clf_scores
+    print(f"{k}: {mean(clf_scores)} +- {stdev(clf_scores)}")
+
+    # Generate confusion matrix.
+    pred = cross_val_predict(v, X_train, data['rating'], cv=10)
+    plot_confusion_matrix(data['rating'], pred, k)
+
+    # Display classification report.
+    print(classification_report(data['rating'], pred))
+
+    # Use LIME to explain predictions.
+    explain(v, X_train, data['rating'], instance, k, method)
 
 # %% [md]
 # ### Overall results
@@ -299,9 +281,12 @@ print(f"{mean_max_score} +- {stdev(max_ft_scores)}")
 # %% [md]
 # Compare overall classification results using boxplot.
 # %%
-results = pd.concat([pd.DataFrame({'accuracy': majority_scores, 'method': "Majority"}),
-    pd.DataFrame({'accuracy': svm_scores, 'method': "SVM"}),
-    pd.DataFrame({'accuracy': max_ft_scores, 'method': "fastText"})])
+from matplotlib import pyplot as plt
+
+# TODO generate automatically based on `scores`
+results = pd.concat([pd.DataFrame({'accuracy': scores['Majority'], 'method': "Majority"}),
+    pd.DataFrame({'accuracy': scores['SVM'], 'method': "SVM"}),
+    pd.DataFrame({'accuracy': scores['fastText'], 'method': "fastText"})])
 
 results.boxplot(column=['accuracy'], by='method', showmeans=True, figsize=(7, 5))
 plt.ylim([0.4, 1.0])
