@@ -246,6 +246,7 @@ from util import plot_confusion_matrix
 from util import explain
 
 EXPLAIN_ID = 4
+SCORING = 'f1_micro'
 
 classifiers = {'Majority': majority_clf, 'SVM': svm_clf, 'fastText': best_ft_clf}
 scores = {'Majority': [], 'SVM': [], 'fastText': []}
@@ -261,7 +262,7 @@ for k, v in classifiers.items():
         method = v.predict_proba_on_str_arr
     
     # Cross-validate the dataset.
-    clf_scores = cross_val_score(v, X_train, data['rating'], cv=10)
+    clf_scores = cross_val_score(v, X_train, data['rating'], scoring=SCORING, cv=10)
     scores[k] = clf_scores
     print(f"{k}: {mean(clf_scores)} +- {stdev(clf_scores)}")
 
@@ -284,11 +285,11 @@ for k, v in classifiers.items():
 from matplotlib import pyplot as plt
 
 # TODO generate automatically based on `scores`
-results = pd.concat([pd.DataFrame({'accuracy': scores['Majority'], 'method': "Majority"}),
-    pd.DataFrame({'accuracy': scores['SVM'], 'method': "SVM"}),
-    pd.DataFrame({'accuracy': scores['fastText'], 'method': "fastText"})])
+results = pd.concat([pd.DataFrame({SCORING: scores['Majority'], 'method': "Majority"}),
+    pd.DataFrame({SCORING: scores['SVM'], 'method': "SVM"}),
+    pd.DataFrame({SCORING: scores['fastText'], 'method': "fastText"})])
 
-results.boxplot(column=['accuracy'], by='method', showmeans=True, figsize=(7, 5))
+results.boxplot(column=[SCORING], by='method', showmeans=True, figsize=(7, 5))
 plt.ylim([0.4, 1.0])
 
 # %% [md]
