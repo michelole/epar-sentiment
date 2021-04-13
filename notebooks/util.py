@@ -6,7 +6,8 @@ from lime.lime_text import LimeTextExplainer
 
 def plot_confusion_matrix(y, y_pred, title):
     conf_matrix = confusion_matrix(y, y_pred)
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='OrRd')
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='OrRd', xticklabels=['-1', '0', '1'],
+        yticklabels=['-1', '0', '1'])
     plt.title(title)
     plt.xlabel("Predicted label")
     plt.ylabel("True label")
