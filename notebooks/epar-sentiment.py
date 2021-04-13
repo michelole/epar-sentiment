@@ -173,7 +173,21 @@ print(len(selected_vocabulary))
 
 # Prefer to use CV next
 # selector.score(input_features, train_features['rating'])
-    
+
+# %% [md]
+# ## Feature visualization
+# %% [md]
+# Visualize dataset using tSNE.
+# %%
+from yellowbrick.text import TSNEVisualizer
+
+tfidf = TfidfVectorizer(vocabulary=selected_vocabulary, sublinear_tf=True)
+X = tfidf.fit_transform(data['clean_sentence'])
+
+tsne = TSNEVisualizer(random_state=42)
+tsne.fit(X, data['rating'])
+tsne.show()
+
 # %% [md]
 # ## Text classification
 
