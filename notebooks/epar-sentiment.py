@@ -286,10 +286,10 @@ from matplotlib import pyplot as plt
 
 # TODO generate automatically based on `scores`
 results = pd.concat([pd.DataFrame({SCORING: scores['Majority'], 'method': "Majority"}),
-    pd.DataFrame({SCORING: scores['SVM'], 'method': "SVM"}),
-    pd.DataFrame({SCORING: scores['fastText'], 'method': "fastText"})])
+    pd.DataFrame({SCORING: scores['fastText'], 'method': "fastText"}),
+    pd.DataFrame({SCORING: scores['SVM'], 'method': "SVM"})])
 
-results.boxplot(column=[SCORING], by='method', showmeans=True, figsize=(7, 5))
+results.boxplot(column=[SCORING], by='method', positions=[1, 3, 2], showmeans=True, figsize=(7, 5))
 plt.ylim([0.4, 1.0])
 
 # %% [md]
